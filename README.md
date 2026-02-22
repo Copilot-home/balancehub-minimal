@@ -35,3 +35,8 @@ curl -s -X POST http://localhost:8000/execute \
 - Health index model: open
 - Axis topology model: open
 - No paywall on core runtime
+
+## Launch Ops
+- CI/CD job checklist: `ops/launch/CI_CD_JOB_CHECKLIST.md`
+- Growth launch plan (30 days): `ops/launch/GROWTH_LAUNCH_PLAN_30D.md`
+- HackerNews template: `ops/launch/HACKERNEWS_POST_TEMPLATE.md`
