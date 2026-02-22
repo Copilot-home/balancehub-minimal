@@ -54,3 +54,4 @@
 
 ## Current blockers
 1. Docker Hub push denied: `insufficient_scope` for `docker.io/balancehub/minimal`.
+2. GitHub Actions blocked by billing lock, so required CI checks cannot start on PR #1.
