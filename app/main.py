@@ -25,6 +25,7 @@ from app.services.invocation_gateway import execute_action
 from app.services.probe_worker import run_probe_cycle
 from app.services.registry_service import capture_snapshot, latest_snapshots, snapshot_diff
 from app.services.gssi_service import compute_system_health
+from app.services.economic_weight_service import compute_economic_weight
 from app.services.map_repos_service import (
     bootstrap_catalogs,
     list_axis_catalog,
@@ -298,6 +299,11 @@ def metrics() -> Response:
 @app.get("/system/health")
 def system_health(db: Session = Depends(get_db)) -> dict:
     return compute_system_health(db)
+
+
+@app.get("/system/economic-weight")
+def system_economic_weight(db: Session = Depends(get_db)) -> dict:
+    return compute_economic_weight(db)
 
 
 @app.get("/catalog/axes")

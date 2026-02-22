@@ -1,8 +1,12 @@
 # BalanceHub Minimal (Public-Safe)
+[![Forks](https://img.shields.io/github/forks/NguyenCuong1989/balancehub-minimal?style=flat)](https://github.com/NguyenCuong1989/balancehub-minimal/forks)
+[![Run with Docker](https://img.shields.io/badge/run-docker-blue)](https://github.com/NguyenCuong1989/balancehub-minimal#quickstart-one-command)
+[![Deploy to Render](https://img.shields.io/badge/deploy-render-46E3B7)](https://render.com/)
 
 BalanceHub v2 runtime prototype with:
 - `/execute` governance gateway
 - `/system/health` (GSSI)
+- `/system/economic-weight` (COMPUTE_W)
 - `/catalog/axes` + `/catalog/connectors`
 - `/metrics` (Prometheus)
 
@@ -19,6 +23,7 @@ docker compose up -d --build
 ## Smoke checks
 ```bash
 curl -s http://localhost:8000/system/health | jq .
+curl -s http://localhost:8000/system/economic-weight | jq .
 curl -s http://localhost:8000/catalog/connectors | jq '.items | length'
 curl -s -X POST http://localhost:8000/execute \
   -H 'Content-Type: application/json' \
