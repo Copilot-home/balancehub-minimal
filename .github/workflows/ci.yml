@@ -26,6 +26,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install CLI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
       - name: Block obvious hardcoded secrets
         run: |
           ! rg -n "(sk_live|sk_test|ghp_|api_key=)" .
@@ -35,6 +39,10 @@ jobs:
     needs: [runtime-integrity, secret-hygiene]
     steps:
       - uses: actions/checkout@v4
+      - name: Install CLI dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq ripgrep
       - name: Start stack
         run: docker compose up -d --build
       - name: Wait for API
