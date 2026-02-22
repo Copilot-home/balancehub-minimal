@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+stripe
+httpx
+prometheus-client
+sqlalchemy
+psycopg2-binary
+redis

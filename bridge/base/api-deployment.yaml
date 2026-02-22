@@ -1,0 +1,38 @@
+#! api-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: api
+    namespace: balancehub
+    labels:
+        com.docker.compose.project: balancehub
+        com.docker.compose.service: api
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: balancehub
+            com.docker.compose.service: api
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: balancehub
+                com.docker.compose.service: api
+                com.docker.compose.network.default: "true"
+        spec:
+            restartPolicy: unless-stopped
+            containers:
+                - name: balancehub-api
+                  image: balancehub-api
+                  imagePullPolicy: IfNotPresent
+                  env:
+                    - name: DATABASE_URL
+                      value: "postgresql://hub:hubpass@postgres:5432/balancehub"
+                    - name: REDIS_URL
+                      value: "redis://redis:6379"
+                  ports:
+                    - name: api-8000
+                      containerPort: 8000

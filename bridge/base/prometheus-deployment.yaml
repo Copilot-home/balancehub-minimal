@@ -1,0 +1,40 @@
+#! prometheus-deployment.yaml
+# Generated code, do not edit
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: prometheus
+    namespace: balancehub
+    labels:
+        com.docker.compose.project: balancehub
+        com.docker.compose.service: prometheus
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            com.docker.compose.project: balancehub
+            com.docker.compose.service: prometheus
+    strategy:
+        type: Recreate
+    template:
+        metadata:
+            labels:
+                com.docker.compose.project: balancehub
+                com.docker.compose.service: prometheus
+                com.docker.compose.network.default: "true"
+        spec:
+            restartPolicy: unless-stopped
+            containers:
+                - name: balancehub-prometheus
+                  image: prom/prometheus
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                    - name: prometheus-9090
+                      containerPort: 9090
+                  volumeMounts:
+                    - name: etc-prometheus-prometheus-yml
+                      mountPath: /etc/prometheus/prometheus.yml
+            volumes:
+                - name: etc-prometheus-prometheus-yml
+                  hostPath:
+                    path: /Users/andy/balancehub/prometheus.yml
