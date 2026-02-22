@@ -1,6 +1,5 @@
 import uuid
-from sqlalchemy import Boolean, DateTime, Float, Integer, String, JSON, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, JSON, Uuid, func
 from sqlalchemy.orm import Mapped, mapped_column
 from app.core.db import Base
 
@@ -8,7 +7,7 @@ from app.core.db import Base
 class ConnectorState(Base):
     __tablename__ = "connector_state"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     axis_name: Mapped[str] = mapped_column(String(16), nullable=False, default="AXIS_5")
     connector_class: Mapped[str] = mapped_column(String(32), nullable=False, default="Core")
@@ -51,7 +50,7 @@ class ConnectorCatalog(Base):
 class RegistrySnapshot(Base):
     __tablename__ = "registry_snapshot"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     connector_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     snapshot_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     endpoint_list: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
@@ -63,7 +62,7 @@ class RegistrySnapshot(Base):
 class DeferredIntent(Base):
     __tablename__ = "deferred_intent"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     connector: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     action_type: Mapped[str] = mapped_column(String(100), nullable=False)
     payload_hash: Mapped[str] = mapped_column(String(128), nullable=False)
@@ -76,7 +75,7 @@ class DeferredIntent(Base):
 class AuditChain(Base):
     __tablename__ = "audit_chain"
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     connector: Mapped[str] = mapped_column(String(100), nullable=False)
     request_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     validation_result: Mapped[str] = mapped_column(String(64), nullable=False)

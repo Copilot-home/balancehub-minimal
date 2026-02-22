@@ -17,6 +17,11 @@ BalanceHub v2 runtime prototype with:
 
 ## Quickstart (one command)
 ```bash
+docker run -p 8000:8000 balancehub/minimal:latest
+```
+
+## Full stack (compose)
+```bash
 docker compose up -d --build
 ```
 
