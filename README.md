@@ -45,3 +45,4 @@ curl -s -X POST http://localhost:8000/execute \
 - CI/CD job checklist: `ops/launch/CI_CD_JOB_CHECKLIST.md`
 - Growth launch plan (30 days): `ops/launch/GROWTH_LAUNCH_PLAN_30D.md`
 - HackerNews template: `ops/launch/HACKERNEWS_POST_TEMPLATE.md`
+- Economic Survival Layer v1 spec: `ops/launch/ECONOMIC_SURVIVAL_LAYER_V1_SPEC.md`
