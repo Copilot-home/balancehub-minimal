@@ -53,6 +53,71 @@ def _require_connector_state(db: Session, connector: str) -> ConnectorState:
     return state
 
 
+def _health_label(score: float) -> str:
+    if score >= 85:
+        return "HEALTHY"
+    if score >= 50:
+        return "DEGRADED"
+    return "CRITICAL"
+
+
+def _health_action_hint(status_label: str, weakest_axis: str, has_spof: bool) -> str:
+    if status_label == "HEALTHY":
+        return "Maintain current stability and keep redundancy checks active."
+    if has_spof:
+        return f"Stabilize {weakest_axis} or add redundancy."
+    return f"Prioritize recovery on {weakest_axis} and monitor breaker transitions."
+
+
+def _format_health_payload(db: Session, health: dict) -> dict:
+    score = float(health.get("system_health", 0.0))
+    axis_health = health.get("axis_health", {})
+    weakest_axis = min(axis_health, key=axis_health.get) if axis_health else "AXIS_5"
+    status_label = _health_label(score)
+
+    connectors = db.execute(select(ConnectorState)).scalars().all()
+    connector_states = {
+        c.name: {
+            "state": c.state,
+            "breaker_state": c.breaker_state,
+            "stability_score": c.stability_score,
+        }
+        for c in connectors
+    }
+    quarantined = sorted(
+        [c for c in connectors if c.state == "QUARANTINED"],
+        key=lambda c: c.stability_score,
+    )
+    if quarantined:
+        primary_risk = f"{quarantined[0].name} (QUARANTINED)"
+    else:
+        weakest_members = [c for c in connectors if c.axis_name == weakest_axis]
+        if weakest_members:
+            risky = min(weakest_members, key=lambda c: c.stability_score)
+            primary_risk = f"{risky.name} ({risky.state})"
+        else:
+            primary_risk = "No immediate connector risk"
+
+    has_spof = bool(health.get("single_point_of_failure"))
+
+    return {
+        "verdict": f"SYSTEM {status_label}",
+        "score": round(score, 2),
+        "status_label": status_label,
+        "weakest_axis": weakest_axis,
+        "primary_risk": primary_risk,
+        "single_point_of_failure": has_spof,
+        "action_hint": _health_action_hint(status_label, weakest_axis, has_spof),
+        "details": {
+            "axis_health": axis_health,
+            "connector_states": connector_states,
+            "top_volatility": health.get("top_volatility", []),
+            "spof_list": health.get("single_point_of_failure", []),
+            "deg_violation": health.get("deg_violation", []),
+        },
+    }
+
+
 @app.on_event("startup")
 def startup_event() -> None:
     init_db()
@@ -137,9 +202,14 @@ def execute(payload: dict, db: Session = Depends(get_db)) -> dict:
             details={"deferred_intent_id": str(deferred.id)},
         )
         return {
-            "status": "deferred",
-            "reason": "breaker_open",
-            "deferred_intent_id": str(deferred.id),
+            "execution_result": "DEFERRED",
+            "reason": "Circuit breaker OPEN",
+            "connector": connector,
+            "connector_state": state.state,
+            "fallback_strategy": "DeferredQueue",
+            "system_status": "STABLE (failure contained)",
+            "action_hint": "Stabilize connector before retrying.",
+            "details": {"deferred_intent_id": str(deferred.id)},
         }
 
     try:
@@ -169,7 +239,14 @@ def execute(payload: dict, db: Session = Depends(get_db)) -> dict:
 
         db.add(state)
         db.commit()
-        return out
+        return {
+            "execution_result": "SUCCESS",
+            "connector": connector,
+            "connector_state": state.state,
+            "system_status": "STABLE",
+            "message": "Execution completed without degradation.",
+            "details": out,
+        }
 
     except Exception as exc:
         classified = classify(exc)
@@ -226,14 +303,50 @@ def execute(payload: dict, db: Session = Depends(get_db)) -> dict:
         db.add(state)
         db.commit()
 
+        if fallback_used:
+            return {
+                "execution_result": "DEFERRED",
+                "reason": "Circuit breaker OPEN",
+                "connector": connector,
+                "connector_state": state.state,
+                "fallback_strategy": "DeferredQueue",
+                "system_status": "STABLE (failure contained)",
+                "action_hint": "Stabilize connector before retrying.",
+                "details": {
+                    "error_type": classified.error_type,
+                    "severity": classified.severity,
+                    "retry_policy": classified.retry_policy,
+                },
+            }
+
+        if state.state == "QUARANTINED":
+            return {
+                "execution_result": "BLOCKED",
+                "reason": "QUARANTINED connector",
+                "connector": connector,
+                "connector_state": state.state,
+                "system_status": "PROTECTED",
+                "action_hint": "Connector recovery required.",
+                "details": {
+                    "error_type": classified.error_type,
+                    "severity": classified.severity,
+                    "retry_policy": classified.retry_policy,
+                },
+            }
+
         return {
-            "status": outcome,
-            "error_type": classified.error_type,
-            "severity": classified.severity,
-            "retry_policy": classified.retry_policy,
-            "breaker_state": state.breaker_state,
-            "state": state.state,
-            "stability_score": state.stability_score,
+            "execution_result": "ERROR",
+            "reason": classified.error_type,
+            "connector": connector,
+            "connector_state": state.state,
+            "system_status": "DEGRADED",
+            "action_hint": "Retry based on policy and monitor breaker state.",
+            "details": {
+                "severity": classified.severity,
+                "retry_policy": classified.retry_policy,
+                "breaker_state": state.breaker_state,
+                "stability_score": state.stability_score,
+            },
         }
 
 
@@ -298,7 +411,7 @@ def metrics() -> Response:
 
 @app.get("/system/health")
 def system_health(db: Session = Depends(get_db)) -> dict:
-    return compute_system_health(db)
+    return _format_health_payload(db, compute_system_health(db))
 
 
 @app.get("/system/economic-weight")

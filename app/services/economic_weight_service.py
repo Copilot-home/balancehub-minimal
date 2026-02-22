@@ -119,14 +119,51 @@ def compute_economic_weight(db: Session) -> dict[str, Any]:
 
     system_weight = round(sum(axis_weight_map.values()), 4)
 
+    connector_sorted = sorted(connector_weights, key=lambda x: x["weight"], reverse=True)
+    monthly_cost = _env_float("MONTHLY_COST_USD", 275.0)
+    monthly_revenue = (
+        _env_float("REV_SPONSORS_USD", 0.0)
+        + _env_float("REV_DONATIONS_USD", 0.0)
+        + _env_float("REV_OTHER_USD", 0.0)
+    )
+    cash_reserve = _env_float("CASH_RESERVE_USD", 600.0)
+    coverage_ratio = (monthly_revenue / monthly_cost) if monthly_cost > 0 else 0.0
+    break_even_gap = max(0.0, monthly_cost - monthly_revenue)
+    burn_rate = break_even_gap
+    runway_months = float("inf") if burn_rate == 0 else (cash_reserve / burn_rate)
+
+    if coverage_ratio >= 1.0:
+        economic_health = "SUSTAINABLE"
+        priority_action = "Reinvest into external deployments and reliability."
+    elif coverage_ratio >= 0.6:
+        economic_health = "STABLE BUT UNDERFUNDED"
+        priority_action = "Increase sponsorship while keeping node footprint stable."
+    elif coverage_ratio >= 0.3:
+        economic_health = "AT RISK"
+        priority_action = "Reduce experimental nodes or increase sponsorship."
+    else:
+        economic_health = "CRITICAL"
+        priority_action = "Freeze growth and reduce infra immediately."
+
     return {
-        "system_economic_weight": system_weight,
-        "axis_economic_weight": axis_weight_map,
-        "connector_economic_weight": sorted(connector_weights, key=lambda x: x["weight"], reverse=True),
-        "signals": {
-            "github_repo": repo,
-            **github,
-            **extras,
+        "economic_health": economic_health,
+        "coverage_ratio": round(coverage_ratio, 4),
+        "monthly_cost": round(monthly_cost, 2),
+        "monthly_revenue": round(monthly_revenue, 2),
+        "break_even_gap": round(break_even_gap, 2),
+        "runway_months": "INF" if runway_months == float("inf") else round(runway_months, 2),
+        "priority_action": priority_action,
+        "details": {
+            "system_economic_weight": system_weight,
+            "C_base": round(monthly_cost, 2),
+            "C_shared": 0.0,
+            "node_breakdown": connector_sorted,
+            "axis_economic_weight": axis_weight_map,
+            "signals": {
+                "github_repo": repo,
+                **github,
+                **extras,
+            },
+            "formula": "W_connector = base_weight * (1 + min(2, external_index/1000))",
         },
-        "formula": "W_connector = base_weight * (1 + min(2, external_index/1000))",
     }
