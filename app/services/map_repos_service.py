@@ -1,6 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.apo_canon import operator_meta_for
 from app.core.models import AxisCatalog, ConnectorCatalog, ConnectorState
 
 AXIS_SEEDS = [
@@ -36,6 +37,7 @@ CONNECTOR_SEEDS = [
     {"name": "Digital-Ecosystem", "assigned_axis": "AXIS_8", "connector_class": "Experimental", "economic_weight_base": 0.4, "dependency_degree": 1, "node_degree": 1},
     {"name": "Evaluation-Runner", "assigned_axis": "AXIS_6", "connector_class": "Peripheral", "economic_weight_base": 0.5, "dependency_degree": 1, "node_degree": 1},
     {"name": "HAIOS-Monitor", "assigned_axis": "AXIS_6", "connector_class": "Peripheral", "economic_weight_base": 0.6, "dependency_degree": 1, "node_degree": 1},
+    {"name": "OmniAgent", "assigned_axis": "AXIS_4", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 2, "node_degree": 2},
 ]
 
 
@@ -105,3 +107,19 @@ def list_axis_catalog(db: Session) -> list[AxisCatalog]:
 
 def list_connector_catalog(db: Session) -> list[ConnectorCatalog]:
     return db.execute(select(ConnectorCatalog).order_by(ConnectorCatalog.name)).scalars().all()
+
+
+def list_connector_catalog_with_apo(db: Session) -> list[dict]:
+    rows = list_connector_catalog(db)
+    return [
+        {
+            "name": c.name,
+            "assigned_axis": c.assigned_axis,
+            "class": c.connector_class,
+            "economic_weight_base": c.economic_weight_base,
+            "dependency_degree": c.dependency_degree,
+            "node_degree": c.node_degree,
+            "apo_operator": operator_meta_for(c.name),
+        }
+        for c in rows
+    ]
