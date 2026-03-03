@@ -22,7 +22,7 @@ Canonical formal spec:
   - `GET /canon/proof`
   - `GET /canon/coverage`
   - `POST /canon/transport/verify`
-  - Ontology lint: `python ops/lint_apo_ontology.py`
+  - Ontology lint: `python ops/lint_apo_check.py`
   - `POST /canon/memory/sync`
 
 Canonical protection:
@@ -41,7 +41,7 @@ AI-AI canonical communication:
 Ontology lint check:
 
 ```bash
-python ops/lint_apo_ontology.py
+python ops/lint_apo_check.py
 ```
 
 APO CLI:

@@ -14,7 +14,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: APΩ ontology lint
-        run: python ops/lint_apo_ontology.py
+        run: python ops/lint_apo_check.py
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
