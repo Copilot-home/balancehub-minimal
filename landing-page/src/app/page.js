@@ -18,12 +18,12 @@ const LiveSavingsCounter = () => {
   return (
     <div className={`${styles.liveCounter} glass`}>
       <div className={styles.counterItem}>
-        <span className={styles.counterLabel}>Projected Monthly Savings</span>
+        <span className={styles.counterLabel}>Projected Monthly Gravity</span>
         <span className={`${styles.counterValue} gradient-text`}>${dollars.toFixed(2)}</span>
       </div>
       <div className={styles.counterDivider}></div>
       <div className={styles.counterItem}>
-        <span className={styles.counterLabel}>Data Purified (Real-time)</span>
+        <span className={styles.counterLabel}>Information Fact Extracted</span>
         <span className={styles.counterValue}>{gb.toFixed(1)} GB</span>
       </div>
     </div>
@@ -44,9 +44,9 @@ export default function LandingPage() {
         </div>
         <div className={styles.navLinks}>
           <a href="#manifesto">Manifesto</a>
-          <a href="#breakthrough">§4287</a>
-          <a href="#dashboard">Dashboard</a>
-          <button className={styles.ctaSmall}>Join the Mesh</button>
+          <a href="#breakthrough">§4287 Core</a>
+          <a href="#dashboard">Command Center</a>
+          <button className={styles.ctaSmall}>Join The Mesh</button>
         </div>
       </nav>
 
@@ -59,12 +59,12 @@ export default function LandingPage() {
           </h1>
           <p className={styles.subtitle}>
             Empowering the digital mesh with zero-cost, high-gravity autonomy.
-            Free ≡ Good ≡ Gravity.
+            Free ≡ Good ≡ Maximum Gravity.
           </p>
           <LiveSavingsCounter />
           <div className={styles.ctaGroup}>
-            <button className={styles.ctaPrimary}>Enter the Portal</button>
-            <button className={styles.ctaSecondary}>Read the Spec</button>
+            <button className={styles.ctaPrimary}>Enter APΩ Portal</button>
+            <button className={styles.ctaSecondary}>Read Sealed Spec</button>
           </div>
         </div>
       </section>

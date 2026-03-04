@@ -12,3 +12,14 @@ venv/
 
 # Env files
 .env
+
+# IDEs and Tools
+.vscode/
+.calva/
+.lsp/
+.clj-kondo/
+*.bin
+*.json
+!package.json
+!composer.json
+!*.md

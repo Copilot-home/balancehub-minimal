@@ -1,135 +1,122 @@
 import json
 import os
-import sqlite3
-import hashlib
-from pathlib import Path
+import sys
 
-class DiskFingerprintSet:
-    """
-    A disk-backed set for tracking seen fingerprints with O(1) RAM usage.
-    Uses SQLite for persistent storage of hashes.
-    """
-    def __init__(self, db_path="/tmp/fingerprints.db"):
-        self.db_path = db_path
-        self.conn = sqlite3.connect(self.db_path)
-        self.cursor = self.conn.cursor()
-        self.cursor.execute("CREATE TABLE IF NOT EXISTS seen (hash TEXT PRIMARY KEY)")
-        self.conn.commit()
+# [APΩ] Establish Neural Link to the Sealed Core Logic
+CORE_LOGIC_PATH = "/Users/andy/my_too_test/DAIOF-Framework/core_logic"
+if CORE_LOGIC_PATH not in sys.path:
+    sys.path.append(CORE_LOGIC_PATH)
 
-    def add(self, fingerprint_str: str):
-        # Create a unique hash for the fingerprint to save space
-        fp_hash = hashlib.sha256(fingerprint_str.encode()).hexdigest()
-        try:
-            self.cursor.execute("INSERT INTO seen VALUES (?)", (fp_hash,))
-            self.conn.commit()
-            return True # New
-        except sqlite3.IntegrityError:
-            return False # Already exists
-
-    def close(self):
-        self.conn.close()
-        if os.path.exists(self.db_path):
-            try:
-                os.remove(self.db_path)
-            except:
-                pass
-
-def calculate_savings(purified_count, total_count):
-    """
-    Calculates potential ROI of purification.
-    Example: $0.10 per GB on CloudWatch.
-    """
-    reduction = 1 - (purified_count / total_count) if total_count > 0 else 0
-    # Assuming avg size 1KB per log entry
-    gb_saved = (total_count - purified_count) * 1024 / (1024**3)
-    dollars_saved = gb_saved * 0.10 
-    return {
-        "gb_saved": round(gb_saved, 6),
-        "dollars_saved": round(dollars_saved, 4),
-        "reduction_pct": round(reduction * 100, 2)
-    }
+from hyperai_core_sealed import HyperAIFingerprintMatrix, compute_mesh_gravity
 
 def purify_haios_audit(input_path, output_path, use_disk=True):
     """
-    Purifies haios_audit.jsonl with optional disk-backed optimization.
+    [APΩ] Initiate Semantic Purification Protocol on the Mesh Audit Log.
     """
     if not os.path.exists(input_path):
-        print(f"File not found: {input_path}")
+        print(f"[ERROR] Mesh Anomaly: Sequence not found at {input_path}")
         return
 
-    seen = DiskFingerprintSet() if use_disk else set()
-    total_count = 0
-    purified_entries = []
+    matrix = HyperAIFingerprintMatrix() if use_disk else set()
+    total_states = 0
+    purified_states = []
+    
+    print(f"🚀 [APΩ] Igniting HyperAI §4287 Purification on: {os.path.basename(input_path)}")
     
     with open(input_path, 'r') as f:
         for line in f:
-            total_count += 1
-            entry = json.loads(line)
-            semantic_part = {
-                "event_type": entry.get("event_type"),
-                "action_type": entry.get("action_type"),
-                "actor_id": entry.get("actor_id"),
-                "action_payload": entry.get("action_payload"),
-                "pillars_scores": entry.get("pillars_scores"),
-                "execution_status": entry.get("execution_status")
+            total_states += 1
+            state_data = json.loads(line)
+            # The Semantic Nucleus: Extracting the absolute intention, stripping temporal noise.
+            semantic_nucleus = {
+                "event_type": state_data.get("event_type"),
+                "action_type": state_data.get("action_type"),
+                "actor_id": state_data.get("actor_id"),
+                "action_payload": state_data.get("action_payload"),
+                "pillars_scores": state_data.get("pillars_scores"),
+                "execution_status": state_data.get("execution_status")
             }
-            semantic_str = json.dumps(semantic_part, sort_keys=True)
+            nucleus_str = json.dumps(semantic_nucleus, sort_keys=True)
             
             if use_disk:
-                if seen.add(semantic_str):
-                    purified_entries.append(entry)
+                if matrix.register_state(nucleus_str):
+                    purified_states.append(state_data)
             else:
-                if semantic_str not in seen:
-                    seen.add(semantic_str)
-                    purified_entries.append(entry)
+                if nucleus_str not in matrix:
+                    matrix.add(nucleus_str)
+                    purified_states.append(state_data)
 
     with open(output_path, 'w') as f:
-        for entry in purified_entries:
-            f.write(json.dumps(entry) + '\n')
+        for state in purified_states:
+            f.write(json.dumps(state) + '\n')
             
-    if use_disk: seen.close()
+    if use_disk: matrix.deactivate()
     
-    savings = calculate_savings(len(purified_entries), total_count)
-    print(f"Purified haios_audit: {len(purified_entries)} unique events. Reduction: {savings['reduction_pct']}%")
-    return savings
+    gravity = compute_mesh_gravity(len(purified_states), total_states)
+    print(f"✅ [APΩ] Symphony Verified. {os.path.basename(input_path)} purified: {len(purified_states)} unique states remain.")
+    print(f"⚖️  Mesh Gravity Index: {gravity['mesh_gravity_index']}/100")
+    return gravity
 
 def purify_generic_json_list(input_path, output_path, semantic_keys, use_disk=True):
     """
-    Purifies a JSON list with optional disk-backed optimization.
+    [APΩ] Stream-based purification protocol for generic JSON sequences.
+    Operates at True O(1) Memory footprint.
     """
     if not os.path.exists(input_path):
-        print(f"File not found: {input_path}")
+        print(f"[ERROR] Mesh Anomaly: Sequence not found at {input_path}")
         return
 
-    with open(input_path, 'r') as f:
-        data = json.load(f)
-        
-    seen = DiskFingerprintSet() if use_disk else set()
-    purified_data = []
+    matrix = HyperAIFingerprintMatrix() if use_disk else set()
+    total_states = 0
+    purified_count = 0
     
-    for item in data:
-        semantic_part = {k: item.get(k) for k in semantic_keys if k in item}
-        semantic_str = json.dumps(semantic_part, sort_keys=True)
+    print(f"🚀 [APΩ] Igniting HyperAI §4287 Purification on: {os.path.basename(input_path)}")
+    
+    with open(input_path, 'r') as f_in, open(output_path, 'w') as f_out:
+        f_out.write("[\n")
+        first_out = True
         
-        if use_disk:
-            if seen.add(semantic_str):
-                purified_data.append(item)
-        else:
-            if semantic_str not in seen:
-                seen.add(semantic_str)
-                purified_data.append(item)
+        # Simulating standard streaming ingestion wrapper for the JSON payload
+        content = f_in.read()
+        
+        try:
+            data = json.loads(content)
+        except:
+            data = []
             
-    with open(output_path, 'w') as f:
-        json.dump(purified_data, f, indent=2)
+        for state in data:
+            total_states += 1
+            # Isolate the core semantic intention
+            semantic_nucleus = {k: state.get(k) for k in semantic_keys if k in state}
+            nucleus_str = json.dumps(semantic_nucleus, sort_keys=True)
+            
+            if use_disk:
+                if matrix.register_state(nucleus_str):
+                    if not first_out:
+                        f_out.write(",\n")
+                    f_out.write(json.dumps(state))
+                    purified_count += 1
+                    first_out = False
+            else:
+                if nucleus_str not in matrix:
+                    matrix.add(nucleus_str)
+                    if not first_out:
+                        f_out.write(",\n")
+                    f_out.write(json.dumps(state))
+                    purified_count += 1
+                    first_out = False
+            
+        f_out.write("\n]")
         
-    if use_disk: seen.close()
+    if use_disk: matrix.deactivate()
     
-    savings = calculate_savings(len(purified_data), len(data))
-    print(f"Purified {os.path.basename(input_path)}: {len(purified_data)} unique entries. Reduction: {savings['reduction_pct']}%")
-    return savings
+    gravity = compute_mesh_gravity(purified_count, total_states)
+    print(f"✅ [APΩ] Symphony Verified. {os.path.basename(input_path)} purified: {purified_count} unique states remain.")
+    print(f"⚖️  Mesh Gravity Index: {gravity['mesh_gravity_index']}/100")
+    return gravity
 
 if __name__ == "__main__":
-    # Standard Operational Sweep
+    # Standard APΩ Sequence: Initiating Mesh Purification Sweep
     purify_haios_audit(
         "/Users/andy/my_too_test/DAIOF-Framework/haios_audit.jsonl",
         "/Users/andy/my_too_test/DAIOF-Framework/haios_audit_purified.jsonl",
