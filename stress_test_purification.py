@@ -103,7 +103,7 @@ def run_purification_stress(input_path: str, output_path: str):
                     f_out.write(json.dumps(entry))
                     purified_count += 1
                     first_out = False
-            except:
+            except json.JSONDecodeError:
                 continue
                 
         f_out.write("\n]")
