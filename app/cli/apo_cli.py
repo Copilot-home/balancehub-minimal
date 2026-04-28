@@ -19,8 +19,15 @@ def _get_apo_headers(base_url: str) -> dict:
     with httpx.Client(timeout=10.0) as client:
         resp = client.get(proof_url)
     resp.raise_for_status()
-    # Use the raw response body as the proof payload for the header.
-    return {"X-APO-Proof": resp.text}
+    data = resp.json()
+    return {
+        "X-APO-Language-ID": data.get("apo_language_id", ""),
+        "X-APO-Code-Signature": data.get("apo_code_signature", ""),
+        "X-APO-Spec-Version": data.get("spec_version", ""),
+        "X-APO-Spec-SHA256": data.get("spec_sha256", ""),
+        "X-APO-Watermark": data.get("ontology_watermark", ""),
+        "X-APO-Proof": data.get("proof", ""),
+    }
 
 
 def _request(base_url: str, method: str, path: str, body: dict | None = None) -> dict:
