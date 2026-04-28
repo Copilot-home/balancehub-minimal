@@ -10,13 +10,27 @@ import sys
 import httpx
 
 
+def _get_apo_headers(base_url: str) -> dict:
+    """
+    Fetch APO proof material from the canon API and construct the
+    headers required by APO-aware middleware for mutating requests.
+    """
+    proof_url = f"{base_url.rstrip('/')}/canon/proof"
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.get(proof_url)
+    resp.raise_for_status()
+    # Use the raw response body as the proof payload for the header.
+    return {"X-APO-Proof": resp.text}
+
+
 def _request(base_url: str, method: str, path: str, body: dict | None = None) -> dict:
     url = f"{base_url.rstrip('/')}{path}"
     with httpx.Client(timeout=10.0) as client:
         if method == "GET":
             resp = client.get(url)
         else:
-            resp = client.post(url, json=body or {})
+            headers = _get_apo_headers(base_url)
+            resp = client.post(url, json=body or {}, headers=headers)
     resp.raise_for_status()
     return resp.json()
 
