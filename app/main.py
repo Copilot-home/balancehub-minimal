@@ -1,4 +1,5 @@
 import asyncio
+import base64
 import os
 import stripe
 from datetime import datetime, timezone
@@ -51,6 +52,21 @@ app = FastAPI(title="BalanceHub v2 Runtime Prototype")
 stripe.api_key = os.getenv("STRIPE_API_KEY")
 
 
+def _header_safe(value: str) -> str:
+    """Encode a string to a latin-1-safe header value.
+
+    HTTP headers (RFC 7230) require visible US-ASCII.  APO identity values
+    contain Unicode symbols (e.g. ⟦APΩ:Σ⟧) that cannot be encoded as
+    latin-1.  We base64-encode any value that is not pure ASCII so that the
+    header is always transmittable, while remaining lossless and reversible.
+    """
+    try:
+        value.encode("latin-1")
+        return value
+    except UnicodeEncodeError:
+        return base64.b64encode(value.encode("utf-8")).decode("ascii")
+
+
 def _with_apo(payload: dict) -> dict:
     identity = canonical_identity_snapshot()
     return {
@@ -67,11 +83,11 @@ def _validate_transport_headers(request: Request) -> tuple[bool, str | None]:
         return False, "missing_signing_key"
 
     required = {
-        "X-APO-Language-ID": identity["language_id"],
-        "X-APO-Code-Signature": identity["code_signature"],
-        "X-APO-Spec-Version": identity["spec_version"],
-        "X-APO-Spec-SHA256": identity["spec_sha256"],
-        "X-APO-Watermark": identity["ontology_watermark"],
+        "X-APO-Language-ID": _header_safe(identity["language_id"]),
+        "X-APO-Code-Signature": _header_safe(identity["code_signature"]),
+        "X-APO-Spec-Version": _header_safe(identity["spec_version"]),
+        "X-APO-Spec-SHA256": _header_safe(identity["spec_sha256"]),
+        "X-APO-Watermark": _header_safe(identity["ontology_watermark"]),
         "X-APO-Proof": proof_expected,
     }
     for key, expected in required.items():
@@ -99,11 +115,11 @@ async def apo_identity_headers(request: Request, call_next):
 
     response = await call_next(request)
     identity = canonical_identity_snapshot()
-    response.headers["X-APO-Language-ID"] = identity["language_id"]
-    response.headers["X-APO-Code-Signature"] = identity["code_signature"]
-    response.headers["X-APO-Spec-Version"] = identity["spec_version"]
-    response.headers["X-APO-Spec-SHA256"] = identity["spec_sha256"]
-    response.headers["X-APO-Watermark"] = identity["ontology_watermark"]
+    response.headers["X-APO-Language-ID"] = _header_safe(identity["language_id"])
+    response.headers["X-APO-Code-Signature"] = _header_safe(identity["code_signature"])
+    response.headers["X-APO-Spec-Version"] = _header_safe(identity["spec_version"])
+    response.headers["X-APO-Spec-SHA256"] = _header_safe(identity["spec_sha256"])
+    response.headers["X-APO-Watermark"] = _header_safe(identity["ontology_watermark"])
     proof = canonical_proof_signature()
     if proof:
         response.headers["X-APO-Proof"] = proof

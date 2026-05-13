@@ -39,6 +39,8 @@ def _upsert_entity_memory(
         row.status = "ACTIVE"
         row.metadata_json = metadata_json or row.metadata_json
     db.add(row)
+    db.flush()  # Ensure the INSERT is visible within the transaction before
+    # subsequent queries for the same entity_name in the same session.
 
 
 def sync_apo_entity_memory(db: Session) -> dict:
