@@ -259,10 +259,23 @@ def test_execute_unknown_connector_rejected(client, apo_headers):
 
 @pytest.mark.parametrize("connector", [
     "Omega-Core",
+    "BalanceHub",
     "HuggingFace",
+    "Registry-Service",
+    "Probe-Worker",
+    "Invocation-Gateway",
+    "Failure-Engine",
+    "Fallback-Router",
+    "Audit-Logger",
+    "Prometheus",
     "Redis",
     "Postgres",
     "DAIOF-Framework",
+    "HyperAI-API",
+    "UEVS-Service",
+    "SACR-Service",
+    "Digital-Ecosystem",
+    "Evaluation-Runner",
     "HAIOS-Monitor",
 ])
 def test_execute_catalog_connector_mock(client, apo_headers, connector):

@@ -53,11 +53,11 @@ stripe.api_key = os.getenv("STRIPE_API_KEY")
 
 
 def _header_safe(value: str) -> str:
-    """Encode a string to a latin-1-safe header value.
+    """Encode a string to a latin-1-safe HTTP header value.
 
-    HTTP headers (RFC 7230) require visible US-ASCII.  APO identity values
-    contain Unicode symbols (e.g. ⟦APΩ:Σ⟧) that cannot be encoded as
-    latin-1.  We base64-encode any value that is not pure ASCII so that the
+    RFC 7230 allows header field values to use ISO-8859-1 (latin-1) characters.
+    APO identity values contain Unicode symbols (e.g. ⟦APΩ:Σ⟧) that fall
+    outside the latin-1 range.  We base64-encode any such value so that the
     header is always transmittable, while remaining lossless and reversible.
     """
     try:

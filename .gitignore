@@ -24,3 +24,6 @@ venv/
 !package.json
 !composer.json
 !*.md
+
+# SQLite databases (dev and test artefacts)
+*.db
