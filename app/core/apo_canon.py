@@ -36,6 +36,10 @@ OPERATORS: dict[str, dict[str, str]] = {
 CONNECTOR_OPERATOR_BINDING: dict[str, str] = {
     "Omega-Core": "O",
     "BalanceHub": "I",
+    "Docker-Runtime": "B",
+    "Docker-Docs": "L",
+    "Docker-Sandbox": "B",
+    "Docker-MCP": "I",
     "Stripe": "I",
     "HuggingFace": "I",
     "Registry-Service": "L",

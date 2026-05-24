@@ -16,6 +16,10 @@ BalanceHub v2 runtime prototype with:
 Canonical formal spec:
 
 - `docs/SIGMA_APOMEGA_COS_SPEC_v2.md`
+- `docs/DOCKER_APO_MAPPING.md`
+- `docs/DOCKER_DOCS_RAG_POLICY.md`
+- `docs/DOCKER_SANDBOX_GUARDRAIL.md`
+- `docs/DOCKER_RUNTIME_NODE_CONTRACT.md`
 - Runtime integrity endpoints:
   - `GET /canon/identity`
   - `GET /canon/validate`
@@ -56,6 +60,9 @@ python3 app/cli/apo_cli.py --base-url http://127.0.0.1:8000 memory-status
 - No secret required for local run.
 - Stripe path runs in mock-safe mode when `STRIPE_API_KEY` is empty.
 - Core health/governance remains active.
+- Docker is treated as local runtime substrate and official docs corpus only.
+  Docker Desktop is not the APO UI, and Docker Cloud/offload requires an
+  explicit Creator value gate.
 
 ## Quickstart (one command)
 
