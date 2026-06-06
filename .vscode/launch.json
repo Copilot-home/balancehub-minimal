@@ -6,8 +6,8 @@
       "type": "lldb",
       "request": "launch",
       "args": [],
-      "cwd": "/Users/andy/balancehub/ops",
-      "program": "/Users/andy/balancehub/ops/build/Debug/outDebug"
+      "cwd": "/Users/andy/balancehub",
+      "program": "/Users/andy/balancehub/build/Debug/outDebug"
     }
   ]
 }
