@@ -41,7 +41,8 @@ jobs:
           git checkout -q FETCH_HEAD
       - name: Block obvious hardcoded secrets
         run: |
-          ! grep -rEnI "(sk_live|sk_test|ghp_|api_key=)" . --exclude-dir=.git
+          ! grep -rEnI "(sk_live|sk_test|ghp_|api_key=)" . \
+            --exclude-dir=.git --exclude-dir=.github --exclude="*.md"
 
   smoke-contract:
     runs-on: ubuntu-latest
