@@ -16,7 +16,7 @@
 - Trigger: push, pull_request
 - Gate: required
 - Steps:
-  - Secret scan: `rg -n "(sk_live|sk_test|ghp_|api_key=)" .`
+  - Secret scan: `python ops/secret_hygiene.py`
   - Dependency audit: `pip-audit` (non-blocking first 2 weeks, then blocking)
 - Pass criteria:
   - No hardcoded keys

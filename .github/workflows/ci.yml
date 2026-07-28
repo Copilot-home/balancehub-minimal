@@ -23,6 +23,8 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r requirements.txt
+      - name: APΩ ontology lint
+        run: python3 ops/lint_apo_check.py
       - name: Python compile check
         run: python3 -m compileall app
       - name: Docker compose config check
@@ -40,9 +42,7 @@ jobs:
           git fetch -q --depth 1 origin "${GITHUB_REF}"
           git checkout -q FETCH_HEAD
       - name: Block obvious hardcoded secrets
-        run: |
-          ! grep -rEnI "(sk_live|sk_test|ghp_|api_key=)" . \
-            --exclude-dir=.git --exclude-dir=.github --exclude="*.md"
+        run: python3 ops/secret_hygiene.py
 
   smoke-contract:
     runs-on: ubuntu-latest

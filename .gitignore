@@ -12,3 +12,6 @@ venv/
 
 # Env files
 .env
+
+# JVM crash logs
+hs_err_pid*.log
