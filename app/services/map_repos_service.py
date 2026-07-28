@@ -42,7 +42,7 @@ CONNECTOR_SEEDS = [
     {"name": "Digital-Ecosystem", "assigned_axis": "AXIS_7", "connector_class": "Experimental", "economic_weight_base": 0.4, "dependency_degree": 1, "node_degree": 1},
     {"name": "Evaluation-Runner", "assigned_axis": "AXIS_6", "connector_class": "Peripheral", "economic_weight_base": 0.5, "dependency_degree": 1, "node_degree": 1},
     {"name": "HAIOS-Monitor", "assigned_axis": "AXIS_6", "connector_class": "Peripheral", "economic_weight_base": 0.6, "dependency_degree": 1, "node_degree": 1},
-    {"name": "omniagent", "assigned_axis": "AXIS_1", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 2, "node_degree": 2},
+    {"name": "OmniAgent", "assigned_axis": "AXIS_1", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 2, "node_degree": 2},
     {"name": "github", "assigned_axis": "AXIS_8", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
     {"name": "phoenix", "assigned_axis": "AXIS_5", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
     {"name": "asana", "assigned_axis": "AXIS_5", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
