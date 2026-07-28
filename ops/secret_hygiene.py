@@ -21,16 +21,18 @@ SKIP_DIRS = {
     "__pycache__",
     "venv",
 }
-SKIP_FILES = {
-    Path("ops/secret_hygiene.py"),
-}
 SKIP_SUFFIXES = {
     ".pyc",
     ".pyo",
 }
 TOKEN_PATTERN = re.compile(
-    r"(sk_live|sk_test|ghp_)[A-Za-z0-9_\-]+"
-    r"|api_key\s*=\s*['\"][^'\"]{8,}['\"]",
+    r'''(sk_live|sk_test|ghp_)[A-Za-z0-9_\-]+
+        |^[A-Z_]+\s*=\s*[A-Za-z0-9_.\-]{8,}\s*$
+        |\bapi_key\s*=\s*['"][^'"]{8,}['"]''',
+    re.IGNORECASE | re.MULTILINE,
+)
+PLACEHOLDER_PATTERN = re.compile(
+    r"replace|example|your|placeholder|dummy|fake|sample",
     re.IGNORECASE,
 )
 
@@ -43,8 +45,6 @@ def _iter_files() -> list[Path]:
             continue
         if any(part in SKIP_DIRS for part in rel_path.parts):
             continue
-        if rel_path in SKIP_FILES:
-            continue
         if path.suffix in SKIP_SUFFIXES:
             continue
         if path.name.startswith("hs_err_pid") and path.suffix == ".log":
@@ -53,18 +53,28 @@ def _iter_files() -> list[Path]:
     return files
 
 
+def _is_placeholder(match: re.Match) -> bool:
+    """Skip documented placeholder values without skipping real tokens."""
+    text = match.group(0)
+    if text.lower().startswith(("sk_live_", "sk_test_")):
+        return False
+    return bool(PLACEHOLDER_PATTERN.search(text))
+
+
 def main() -> int:
     findings: list[str] = []
     for path in _iter_files():
         rel_path = path.relative_to(REPO_ROOT)
         try:
-            lines = path.read_text(encoding="utf-8").splitlines()
+            text = path.read_text(encoding="utf-8")
         except UnicodeDecodeError:
             continue
 
-        for line_number, line in enumerate(lines, start=1):
-            if TOKEN_PATTERN.search(line):
-                findings.append(f"{rel_path}:{line_number}: possible hardcoded secret")
+        for match in TOKEN_PATTERN.finditer(text):
+            if _is_placeholder(match):
+                continue
+            line_number = text[: match.start()].count("\n") + 1
+            findings.append(f"{rel_path}:{line_number}: possible hardcoded secret")
 
     if findings:
         print("\n".join(findings))
