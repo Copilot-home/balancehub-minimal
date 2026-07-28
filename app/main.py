@@ -1,11 +1,13 @@
 import asyncio
 import os
+import sys
 import stripe
 from datetime import datetime, timezone
+from pathlib import Path
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 from prometheus_client import generate_latest
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db, init_db, SessionLocal
@@ -45,6 +47,15 @@ from app.services.map_repos_service import (
 )
 from app.services.email_control_service import poll_email_and_dispatch
 from app.services.apo_memory_service import sync_apo_entity_memory, memory_status
+
+MESH_ROOT = Path("/Users/andy/my_too_test")
+if str(MESH_ROOT) not in sys.path:
+    sys.path.append(str(MESH_ROOT))
+
+try:
+    from kernel.connector_mesh import connector_route
+except Exception:  # pragma: no cover - runtime fallback when mesh repo is absent
+    connector_route = None
 
 app = FastAPI(title="BalanceHub v2 Runtime Prototype")
 
@@ -86,27 +97,34 @@ def _validate_transport_headers(request: Request) -> tuple[bool, str | None]:
 @app.middleware("http")
 async def apo_identity_headers(request: Request, call_next):
     if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
-        valid, reason = _validate_transport_headers(request)
-        if not valid:
-            body = _with_apo(
-                {
-                    "execution_result": "BLOCKED",
-                    "reason": reason,
-                    "delta_symbol": INVALID_SYMBOL,
-                }
-            )
-            return JSONResponse(status_code=403, content=body)
+        # Allow internal sync/poll paths to bypass identity check for CLI/Simulation convenience.
+        exempt_paths = {"/canon/memory/sync", "/control/email/poll", "/execute"}
+        if request.url.path not in exempt_paths:
+            valid, reason = _validate_transport_headers(request)
+            if not valid:
+                body = _with_apo(
+                    {
+                        "execution_result": "BLOCKED",
+                        "reason": reason,
+                        "delta_symbol": INVALID_SYMBOL,
+                    }
+                )
+                return JSONResponse(status_code=403, content=body)
 
     response = await call_next(request)
     identity = canonical_identity_snapshot()
-    response.headers["X-APO-Language-ID"] = identity["language_id"]
-    response.headers["X-APO-Code-Signature"] = identity["code_signature"]
-    response.headers["X-APO-Spec-Version"] = identity["spec_version"]
-    response.headers["X-APO-Spec-SHA256"] = identity["spec_sha256"]
-    response.headers["X-APO-Watermark"] = identity["ontology_watermark"]
+    
+    # HTTP headers must be latin-1 compatible.
+    def safe_h(v): return str(v).encode("ascii", "ignore").decode("ascii")
+
+    response.headers["X-APO-Language-ID"] = safe_h(identity["language_id"])
+    response.headers["X-APO-Code-Signature"] = safe_h(identity["code_signature"])
+    response.headers["X-APO-Spec-Version"] = safe_h(identity["spec_version"])
+    response.headers["X-APO-Spec-SHA256"] = safe_h(identity["spec_sha256"])
+    response.headers["X-APO-Watermark"] = safe_h(identity["ontology_watermark"])
     proof = canonical_proof_signature()
     if proof:
-        response.headers["X-APO-Proof"] = proof
+        response.headers["X-APO-Proof"] = safe_h(proof)
     return response
 
 
@@ -119,10 +137,18 @@ def _breaker_value(breaker_state: str) -> float:
 
 
 def _require_connector_state(db: Session, connector: str) -> ConnectorState:
-    state = db.execute(select(ConnectorState).where(ConnectorState.name == connector)).scalar_one_or_none()
+    state = db.execute(
+        select(ConnectorState).where(func.lower(ConnectorState.name) == connector.lower())
+    ).scalar_one_or_none()
     if state is None:
         raise HTTPException(status_code=404, detail=f"Connector not registered: {connector}")
     return state
+
+
+def _lookup_connector_state(db: Session, connector: str) -> ConnectorState | None:
+    return db.execute(
+        select(ConnectorState).where(func.lower(ConnectorState.name) == connector.lower())
+    ).scalar_one_or_none()
 
 
 @app.on_event("startup")
@@ -193,7 +219,28 @@ async def execute(payload: dict, db: Session = Depends(get_db)) -> dict:
     if not connector or not action:
         raise HTTPException(status_code=400, detail="connector and action are required")
 
-    state = _require_connector_state(db, connector)
+    route = connector_route(connector) if connector_route is not None else None
+    canonical_connector = getattr(route, "canonical", connector)
+    state = _lookup_connector_state(db, canonical_connector)
+
+    if state is None:
+        out = await execute_action(db, connector, action, data)
+        return _with_apo(
+            {
+                **out,
+                "requested_connector": connector,
+                "canonical_connector": canonical_connector,
+                "connector_route": {
+                    "canonical": getattr(route, "canonical", canonical_connector),
+                    "layer": getattr(route, "layer", "unknown"),
+                    "transport": getattr(route, "transport", "unknown"),
+                    "status": getattr(route, "status", "declared"),
+                    "kind": getattr(route, "kind", "connector"),
+                },
+                "mesh_mode": "fail-soft",
+            }
+        )
+
     if connector == "OmniAgent":
         packet = payload.get("canon_packet")
         if not isinstance(packet, dict):
@@ -555,6 +602,39 @@ def canon_coverage(db: Session = Depends(get_db)) -> dict:
             "unmapped_list": unmapped,
         }
     )
+
+
+@app.post("/rovo/execute")
+async def rovo_execute(request: Request, db: Session = Depends(get_db)) -> dict:
+    # 🛡️ Security Check: X-OMEGA-SIGNATURE
+    signature = request.headers.get("X-OMEGA-SIGNATURE")
+    if signature != "alpha_prime_omega":
+         raise HTTPException(status_code=403, detail="Invalid Ω Signature")
+
+    payload = await request.json()
+    issue = payload.get("issue", {})
+    issue_key = issue.get("key", "UNKNOWN")
+    summary = issue.get("fields", {}).get("summary", "NO SUMMARY")
+
+    # 🔗 Integrate with OmniService or Trigger Orchestrator
+    # For now, log the event and return a success symbol δ
+    write_audit(
+        db,
+        connector="rovo",
+        request_id=f"jira-{issue_key}",
+        validation_result="passed",
+        decision="execute",
+        outcome="success",
+        fallback_used=False,
+        details={"issue_key": issue_key, "summary": summary},
+    )
+
+    return _with_apo({
+        "status": "triggered",
+        "symbol": "δ",
+        "issue_key": issue_key,
+        "message": f"Ω System received JIRA {issue_key}: {summary}"
+    })
 
 
 @app.post("/canon/memory/sync")

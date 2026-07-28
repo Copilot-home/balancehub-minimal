@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
 from app.core.apo_canon import operator_meta_for
@@ -43,6 +43,12 @@ CONNECTOR_SEEDS = [
     {"name": "Evaluation-Runner", "assigned_axis": "AXIS_6", "connector_class": "Peripheral", "economic_weight_base": 0.5, "dependency_degree": 1, "node_degree": 1},
     {"name": "HAIOS-Monitor", "assigned_axis": "AXIS_6", "connector_class": "Peripheral", "economic_weight_base": 0.6, "dependency_degree": 1, "node_degree": 1},
     {"name": "OmniAgent", "assigned_axis": "AXIS_1", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 2, "node_degree": 2},
+    {"name": "github", "assigned_axis": "AXIS_8", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
+    {"name": "phoenix", "assigned_axis": "AXIS_5", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
+    {"name": "asana", "assigned_axis": "AXIS_5", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
+    {"name": "memory", "assigned_axis": "AXIS_4", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 2, "node_degree": 2},
+    {"name": "registry", "assigned_axis": "AXIS_8", "connector_class": "Core", "economic_weight_base": 0.8, "dependency_degree": 1, "node_degree": 1},
+    {"name": "stripe", "assigned_axis": "AXIS_7", "connector_class": "Core", "economic_weight_base": 1.0, "dependency_degree": 1, "node_degree": 1},
 ]
 
 
@@ -79,7 +85,7 @@ def sync_connector_state_with_catalog(db: Session) -> None:
 
     for catalog in rows:
         state = db.execute(
-            select(ConnectorState).where(ConnectorState.name == catalog.name)
+            select(ConnectorState).where(func.lower(ConnectorState.name) == catalog.name.lower())
         ).scalar_one_or_none()
 
         if state is None:

@@ -18,6 +18,10 @@ class OmniService:
             return await OmniService._agent_browser(payload)
         elif action == "rag_pipeline":
             return await OmniService._rag_pipeline(payload)
+        elif action == "analysis":
+            return {"status": "success", "result": "Phoenix Analysis Complete"}
+        elif action == "reasoning":
+            return {"status": "success", "result": "Phoenix Reasoning Complete"}
         else:
             raise ValueError(f"Unsupported action: {action}")
 

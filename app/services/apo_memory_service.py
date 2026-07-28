@@ -45,7 +45,11 @@ def sync_apo_entity_memory(db: Session) -> dict:
     catalog_rows = db.execute(select(ConnectorCatalog)).scalars().all()
     state_rows = db.execute(select(ConnectorState)).scalars().all()
 
+    processed_names = set()
+
     for c in catalog_rows:
+        if c.name in processed_names:
+            continue
         _upsert_entity_memory(
             db,
             entity_name=c.name,
@@ -56,8 +60,11 @@ def sync_apo_entity_memory(db: Session) -> dict:
                 "class": c.connector_class,
             },
         )
+        processed_names.add(c.name)
 
     for s in state_rows:
+        if s.name in processed_names:
+            continue
         _upsert_entity_memory(
             db,
             entity_name=s.name,
@@ -69,15 +76,18 @@ def sync_apo_entity_memory(db: Session) -> dict:
                 "stability_score": s.stability_score,
             },
         )
+        processed_names.add(s.name)
 
     # Non-catalog control entities must also have memory roots.
-    _upsert_entity_memory(
-        db,
-        entity_name="EmailControl",
-        entity_type="control-plane",
-        memory_ref="control://email",
-        metadata_json={"channel": "imap/smtp"},
-    )
+    if "EmailControl" not in processed_names:
+        _upsert_entity_memory(
+            db,
+            entity_name="EmailControl",
+            entity_type="control-plane",
+            memory_ref="control://email",
+            metadata_json={"channel": "imap/smtp"},
+        )
+        processed_names.add("EmailControl")
 
     db.commit()
 
